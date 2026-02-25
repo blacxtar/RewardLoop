@@ -3,11 +3,10 @@
  * 
  * Wraps the entire application in:
  * 1. ErrorBoundary — catches unhandled JS errors with a fallback UI
- * 2. Redux Provider — makes the store available to all components via hooks
- * 3. SafeAreaProvider — handles device-safe insets (notches, status bars)
- * 4. AppNavigator — the conditional auth/main navigation tree
- * 
- * StatusBar is set to dark-content on a light background to match our theme.
+ * 2. ThemeProvider — provides dynamic light/dark color palette
+ * 3. Redux Provider — makes the store available to all components
+ * 4. SafeAreaProvider — handles device-safe insets
+ * 5. AppNavigator — the conditional auth/main navigation tree
  */
 
 import React from 'react';
@@ -17,16 +16,32 @@ import { Provider } from 'react-redux';
 import store from './src/redux/store';
 import AppNavigator from './src/navigation/AppNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
+import { ThemeProvider, useTheme } from './src/theme';
+
+/**
+ * Inner app — needs ThemeProvider above it to use useTheme().
+ * StatusBar style flips based on current theme.
+ */
+const AppContent = () => {
+  const { isDark } = useTheme();
+  return (
+    <>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <AppNavigator />
+    </>
+  );
+};
 
 export default function App() {
   return (
     <ErrorBoundary>
-      <Provider store={store}>
-        <SafeAreaProvider>
-          <StatusBar style="dark" />
-          <AppNavigator />
-        </SafeAreaProvider>
-      </Provider>
+      <ThemeProvider>
+        <Provider store={store}>
+          <SafeAreaProvider>
+            <AppContent />
+          </SafeAreaProvider>
+        </Provider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }

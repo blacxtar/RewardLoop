@@ -12,7 +12,7 @@
 
 import React, { Component } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
+import { LightTheme as Colors, Spacing, FontSize, BorderRadius } from '../theme';
 
 class ErrorBoundary extends Component {
   constructor(props) {

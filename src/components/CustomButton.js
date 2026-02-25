@@ -1,18 +1,5 @@
 /**
- * CustomButton — reusable button with loading state and variants.
- * 
- * WHY a custom button?
- * - React Native's built-in Button has no styling control
- * - Supports primary / outline / text variants + loading spinner
- * - Consistent height, border radius, and typography across the app
- * 
- * Props:
- *   title     — button label
- *   onPress   — press handler
- *   variant   — 'primary' | 'outline' | 'text' (default: 'primary')
- *   loading   — shows spinner and disables press
- *   disabled  — greys out and disables press
- *   style     — additional container styles
+ * CustomButton — reusable button with dark mode support.
  */
 
 import React from 'react';
@@ -22,7 +9,8 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
+import { Spacing, FontSize, BorderRadius } from '../theme';
 
 const CustomButton = ({
   title,
@@ -32,6 +20,7 @@ const CustomButton = ({
   disabled = false,
   style,
 }) => {
+  const { colors } = useTheme();
   const isDisabled = disabled || loading;
   const isPrimary = variant === 'primary';
   const isOutline = variant === 'outline';
@@ -40,8 +29,8 @@ const CustomButton = ({
     <TouchableOpacity
       style={[
         styles.base,
-        isPrimary && styles.primary,
-        isOutline && styles.outline,
+        isPrimary && { backgroundColor: colors.primary },
+        isOutline && { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: colors.primary },
         isDisabled && styles.disabled,
         style,
       ]}
@@ -51,14 +40,14 @@ const CustomButton = ({
     >
       {loading ? (
         <ActivityIndicator
-          color={isPrimary ? Colors.white : Colors.primary}
+          color={isPrimary ? colors.white : colors.primary}
           size="small"
         />
       ) : (
         <Text
           style={[
             styles.label,
-            isPrimary ? styles.primaryLabel : styles.altLabel,
+            { color: isPrimary ? colors.white : colors.primary },
           ]}
         >
           {title}
@@ -74,29 +63,10 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: 24,
   },
-  primary: {
-    backgroundColor: Colors.primary,
-  },
-  outline: {
-    backgroundColor: 'transparent',
-    borderWidth: 1.5,
-    borderColor: Colors.primary,
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-  label: {
-    fontSize: FontSize.body,
-    fontWeight: '700',
-  },
-  primaryLabel: {
-    color: Colors.white,
-  },
-  altLabel: {
-    color: Colors.primary,
-  },
+  disabled: { opacity: 0.5 },
+  label: { fontSize: FontSize.body, fontWeight: '700' },
 });
 
 export default CustomButton;

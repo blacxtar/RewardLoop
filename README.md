@@ -19,10 +19,16 @@ A production-ready React Native mobile application built for the **GARS Technolo
 - **Progress Tracking** — Visual progress bar toward next reward tier
 - **Points Badge** — Real-time points display in navigation header
 
+### 🎨 UI & Theming
+- **🌙 Dark / Light Mode** — Toggle via native Switch in the header, syncs with system preference
+- **💀 Skeleton Loading** — Animated pulse placeholders while products load (replaces spinners)
+- **🎯 Modern Cards** — Elevated card design with refined shadows (adaptive for light/dark)
+- **💾 Theme Persistence** — Preference saved to AsyncStorage, survives app restart
+
 ### Production Quality
 - **🛡️ Error Boundary** — Global error handler with retry option
-- **💾 Offline Persistence** — AsyncStorage for auth, favorites, and loyalty data
-- **⚡ Performance** — React.memo, useCallback, debounced inputs, FlatList optimization
+- **💾 Offline Persistence** — AsyncStorage for auth, favorites, loyalty, and theme
+- **⚡ Performance** — React.memo, useCallback, useMemo, shallowEqual, debounced inputs, FlatList optimization
 - **✅ Unit Tests** — loyaltySlice reducer tests (5 passing)
 - **📁 Modular Architecture** — Scalable folder structure with separation of concerns
 
@@ -32,7 +38,7 @@ A production-ready React Native mobile application built for the **GARS Technolo
 
 ```
 src/
-├── components/          # Reusable UI (CustomButton, CustomInput, ProductCard, etc.)
+├── components/          # Reusable UI (ProductCard, SkeletonLoader, ErrorBoundary, etc.)
 ├── hooks/               # Custom hooks (useDebounce)
 ├── navigation/          # React Navigation (conditional auth/main stacks)
 ├── redux/
@@ -40,7 +46,10 @@ src/
 │   └── store.js         # Configured store
 ├── screens/             # Full-page screens (Login, ProductList, Detail, Favorites, Rewards)
 ├── services/            # Centralized API layer (axios instances)
-├── theme/               # Design tokens (colors, spacing, typography)
+├── theme/
+│   ├── colors.js        # Light & Dark color palettes
+│   ├── spacing.js       # Spacing, font sizes, border radius tokens
+│   └── ThemeContext.js   # ThemeProvider + useTheme() hook
 └── utils/               # Constants, storage helpers, formatters
 ```
 
@@ -60,7 +69,7 @@ AppNavigator
 │   └── LoginScreen
 └── Main Tabs (isLoggedIn === true)
     ├── Products Tab
-    │   ├── ProductListScreen
+    │   ├── ProductListScreen (skeleton → cards)
     │   └── ProductDetailScreen
     ├── Favorites Tab
     │   └── FavoritesScreen
@@ -77,6 +86,7 @@ AppNavigator
 | React Native (Expo) | Cross-platform mobile framework |
 | Redux Toolkit | Global state management |
 | React Navigation | Stack + Tab navigation |
+| React Context | Theme (dark/light mode) management |
 | Axios | HTTP client |
 | AsyncStorage | Local persistence |
 | Jest + jest-expo | Unit testing |
@@ -94,7 +104,7 @@ AppNavigator
 
 ```bash
 # Clone the repository
-git clone <repo-url>
+git clone https://github.com/blacxtar/RewardLoop.git
 cd RewardLoop
 
 # Install dependencies
@@ -134,24 +144,7 @@ eas build:configure
 eas build --platform android --profile preview
 ```
 
-Add this to `eas.json` for APK output:
-
-```json
-{
-  "build": {
-    "preview": {
-      "android": {
-        "buildType": "apk"
-      }
-    },
-    "production": {
-      "android": {
-        "buildType": "app-bundle"
-      }
-    }
-  }
-}
-```
+The `eas.json` is already configured with `preview` (APK) and `production` (AAB) profiles.
 
 ### Local Build (Alternative)
 
@@ -163,18 +156,6 @@ npx expo prebuild --platform android
 cd android && ./gradlew assembleRelease
 ```
 
----
-
-## 🎯 Demo Script (5 minutes)
-
-1. **Login (1 min)** — Show validation errors → enter demo credentials → login → +5 points badge appears
-2. **Browse Products (1 min)** — Scroll products → search "jacket" → filter by "electronics" → pull-to-refresh
-3. **Product Details (30s)** — Tap a product → view details → star rating, price, description
-4. **Favorites (1 min)** — Add to favorites → +10 points → go to Favorites tab → see list → remove one → show empty state
-5. **Loyalty Rewards (1 min)** — Go to Rewards tab → show points hero → progress bar → reward tiers → transaction history
-6. **Persistence (30s)** — Close and reopen app → session restored → favorites and points preserved
-
----
 
 ## 🧠 Key Architecture Decisions
 
@@ -182,8 +163,10 @@ cd android && ./gradlew assembleRelease
 |---|---|
 | **Expo over bare React Native** | Faster dev workflow, managed builds (EAS), OTA updates |
 | **Redux Toolkit over Context** | Scalable state, DevTools, thunks for async, Immer for immutability |
+| **React Context for theming** | Theme is a UI concern, not app state — avoids Redux re-renders for non-theme changes |
 | **Conditional navigation** | Auth state in Redux drives stack switching — prevents back-navigation to login |
 | **Client-side filtering** | FakeStore has ~20 items — faster UX than server-round-trip per filter |
+| **Skeleton over spinner** | Better perceived performance — users see layout before content arrives |
 | **Loyalty as a separate slice** | Mirrors GARS Technology's SaaS model — designed for future backend sync |
 | **Points never deducted** | Real loyalty systems only accumulate — removing a favorite doesn't penalize |
 | **AsyncStorage persistence** | Session survives app restart without a backend |

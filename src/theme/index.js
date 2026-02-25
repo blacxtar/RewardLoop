@@ -1,7 +1,14 @@
 /**
  * Barrel export for theme tokens.
- * Allows components to do: import { Colors, Spacing } from '../theme';
+ * 
+ * All components import from here:
+ *   import { useTheme } from '../theme';
+ *   import { Spacing, FontSize } from '../theme';
+ * 
+ * Colors are now accessed via useTheme() hook instead of a static import,
+ * so they respond to dark/light mode switching.
  */
 
-export { Colors } from './colors';
+export { LightTheme, DarkTheme } from './colors';
 export { Spacing, FontSize, BorderRadius } from './spacing';
+export { ThemeProvider, useTheme } from './ThemeContext';

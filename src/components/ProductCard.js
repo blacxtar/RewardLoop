@@ -1,61 +1,49 @@
 /**
- * ProductCard — memoized product card for the FlatList.
- * 
- * WHY React.memo?
- * - FlatList re-renders visible items when the data array changes (e.g., on filter).
- * - React.memo prevents re-renders unless the product data or favorite status changes.
- * - For a list of ~20 items this is a best-practice, and it becomes critical at 100+.
- * 
- * Props:
- *   product    — product object { id, title, price, image, category, rating }
- *   onPress    — navigates to ProductDetail screen
- *   isFavorite — whether this product is in the favorites list
+ * ProductCard — memoized, dark-mode-aware product card.
  */
 
 import React, { memo } from 'react';
-import {
-  View,
-  Text,
-  Image,
-  StyleSheet,
-  TouchableOpacity,
-} from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
+import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { useTheme } from '../theme/ThemeContext';
+import { Spacing, FontSize, BorderRadius } from '../theme';
 
 const ProductCard = ({ product, onPress, isFavorite }) => {
+  const { colors } = useTheme();
+
   return (
     <TouchableOpacity
-      style={styles.card}
+      style={[
+        styles.card,
+        {
+          backgroundColor: colors.surface,
+          shadowColor: colors.shadowColor,
+          shadowOpacity: colors.cardShadowOpacity,
+          shadowRadius: colors.cardShadowRadius,
+        },
+      ]}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      {/* Product image */}
-      <View style={styles.imageContainer}>
-        <Image
-          source={{ uri: product.image }}
-          style={styles.image}
-          resizeMode="contain"
-        />
-        {/* Favorite indicator */}
+      <View style={[styles.imageContainer, { backgroundColor: colors.white }]}>
+        <Image source={{ uri: product.image }} style={styles.image} resizeMode="contain" />
         {isFavorite && (
-          <View style={styles.favBadge}>
+          <View style={[styles.favBadge, { backgroundColor: colors.white }]}>
             <Text style={styles.favIcon}>❤️</Text>
           </View>
         )}
       </View>
-
-      {/* Product info */}
       <View style={styles.info}>
-        <Text style={styles.category}>{product.category}</Text>
-        <Text style={styles.title} numberOfLines={2}>
+        <Text style={[styles.category, { color: colors.primary }]}>{product.category}</Text>
+        <Text style={[styles.title, { color: colors.textPrimary }]} numberOfLines={2}>
           {product.title}
         </Text>
-
         <View style={styles.bottomRow}>
-          <Text style={styles.price}>${product.price.toFixed(2)}</Text>
+          <Text style={[styles.price, { color: colors.textPrimary }]}>
+            ${product.price.toFixed(2)}
+          </Text>
           <View style={styles.rating}>
             <Text style={styles.ratingIcon}>⭐</Text>
-            <Text style={styles.ratingText}>
+            <Text style={[styles.ratingText, { color: colors.textSecondary }]}>
               {product.rating?.rate || 'N/A'}
             </Text>
           </View>
@@ -67,54 +55,40 @@ const ProductCard = ({ product, onPress, isFavorite }) => {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface,
     borderRadius: BorderRadius.lg,
     marginHorizontal: Spacing.md,
     marginVertical: Spacing.sm,
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
     overflow: 'hidden',
   },
   imageContainer: {
-    backgroundColor: Colors.white,
     padding: Spacing.md,
     alignItems: 'center',
     height: 180,
     position: 'relative',
   },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
+  image: { width: '100%', height: '100%' },
   favBadge: {
     position: 'absolute',
     top: Spacing.sm,
     right: Spacing.sm,
-    backgroundColor: Colors.white,
     borderRadius: BorderRadius.full,
     width: 28,
     height: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: Colors.black,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
   },
-  favIcon: {
-    fontSize: 14,
-  },
-  info: {
-    padding: Spacing.md,
-  },
+  favIcon: { fontSize: 14 },
+  info: { padding: Spacing.md },
   category: {
     fontSize: FontSize.xs,
     fontWeight: '600',
-    color: Colors.primary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: Spacing.xs,
@@ -122,7 +96,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FontSize.md,
     fontWeight: '600',
-    color: Colors.textPrimary,
     lineHeight: 20,
     marginBottom: Spacing.sm,
   },
@@ -131,25 +104,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  price: {
-    fontSize: FontSize.lg,
-    fontWeight: '800',
-    color: Colors.textPrimary,
-  },
-  rating: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  ratingIcon: {
-    fontSize: 12,
-    marginRight: 3,
-  },
-  ratingText: {
-    fontSize: FontSize.sm,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-  },
+  price: { fontSize: FontSize.lg, fontWeight: '800' },
+  rating: { flexDirection: 'row', alignItems: 'center' },
+  ratingIcon: { fontSize: 12, marginRight: 3 },
+  ratingText: { fontSize: FontSize.sm, fontWeight: '600' },
 });
 
-// React.memo — only re-renders if props change (shallow comparison)
 export default memo(ProductCard);

@@ -1,20 +1,5 @@
 /**
- * CustomInput — reusable text input with label, error display, and icon support.
- * 
- * WHY a custom wrapper?
- * - Ensures every input across the app has consistent styling, spacing, and error UX
- * - Supports optional left icon, secure text toggle, and error messages
- * - Follows controlled component pattern (value + onChangeText from parent)
- * 
- * Props:
- *   label        — field label text
- *   value        — controlled value
- *   onChangeText — change handler
- *   placeholder  — placeholder text
- *   error        — error message string (shows red below input when truthy)
- *   secureTextEntry — masks text for passwords
- *   icon         — emoji or text icon rendered on the left
- *   ...rest      — forwarded to underlying TextInput
+ * CustomInput — reusable text input with dark mode support.
  */
 
 import React, { useState } from 'react';
@@ -25,7 +10,8 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
+import { Spacing, FontSize, BorderRadius } from '../theme';
 
 const CustomInput = ({
   label,
@@ -37,28 +23,34 @@ const CustomInput = ({
   icon,
   ...rest
 }) => {
-  // Local state to toggle password visibility
+  const { colors } = useTheme();
   const [isSecureVisible, setIsSecureVisible] = useState(false);
 
   return (
     <View style={styles.container}>
-      {/* Label */}
-      {label && <Text style={styles.label}>{label}</Text>}
-
-      {/* Input row */}
-      <View style={[styles.inputWrapper, error && styles.inputError]}>
+      {label && (
+        <Text style={[styles.label, { color: colors.textPrimary }]}>{label}</Text>
+      )}
+      <View
+        style={[
+          styles.inputWrapper,
+          {
+            backgroundColor: colors.inputBackground,
+            borderColor: error ? colors.error : colors.border,
+          },
+        ]}
+      >
         {icon && <Text style={styles.icon}>{icon}</Text>}
         <TextInput
-          style={styles.input}
+          style={[styles.input, { color: colors.textPrimary }]}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={Colors.textLight}
+          placeholderTextColor={colors.textLight}
           secureTextEntry={secureTextEntry && !isSecureVisible}
           autoCapitalize="none"
           {...rest}
         />
-        {/* Show/hide toggle for password fields */}
         {secureTextEntry && (
           <TouchableOpacity
             onPress={() => setIsSecureVisible(!isSecureVisible)}
@@ -70,53 +62,31 @@ const CustomInput = ({
           </TouchableOpacity>
         )}
       </View>
-
-      {/* Error message */}
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {error && <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    marginBottom: Spacing.md,
-  },
+  container: { marginBottom: Spacing.md },
   label: {
     fontSize: FontSize.md,
     fontWeight: '600',
-    color: Colors.textPrimary,
     marginBottom: Spacing.xs,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
     borderWidth: 1.5,
-    borderColor: Colors.border,
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.md,
     height: 52,
   },
-  inputError: {
-    borderColor: Colors.error,
-  },
-  icon: {
-    fontSize: 18,
-    marginRight: Spacing.sm,
-  },
-  input: {
-    flex: 1,
-    fontSize: FontSize.body,
-    color: Colors.textPrimary,
-    height: '100%',
-  },
-  toggleIcon: {
-    fontSize: 18,
-    marginLeft: Spacing.sm,
-  },
+  icon: { fontSize: 18, marginRight: Spacing.sm },
+  input: { flex: 1, fontSize: FontSize.body, height: '100%' },
+  toggleIcon: { fontSize: 18, marginLeft: Spacing.sm },
   errorText: {
     fontSize: FontSize.sm,
-    color: Colors.error,
     marginTop: Spacing.xs,
     marginLeft: Spacing.xs,
   },

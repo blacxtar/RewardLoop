@@ -1,36 +1,29 @@
 /**
- * AppNavigator — root navigation with auth hydration and logout support.
- * 
- * Architecture:
- * 1. On mount, checks AsyncStorage for a saved token → auto-login (hydration)
- * 2. Shows a splash/loading state while hydrating to prevent flash of login screen
- * 3. Conditional rendering: Auth stack (login) vs Main tabs (products, favorites, rewards)
- * 4. Logout button in Products header — dispatches logoutUser thunk
- * 5. Points badge visible in the Products header (loyalty system preview)
+ * AppNavigator — dark-mode-aware navigation with theme toggle.
  */
 
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme as NavDarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import {
   Text,
   View,
+  Switch,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Colors, FontSize, Spacing, BorderRadius } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
+import { Spacing, FontSize, BorderRadius } from '../theme';
 import { STORAGE_KEYS } from '../utils/constants';
 
-// Redux actions
 import { setCredentials, logoutUser } from '../redux/slices/authSlice';
 import { setLoyaltyData } from '../redux/slices/loyaltySlice';
 import { setFavorites } from '../redux/slices/favoritesSlice';
 
-// Screens
 import LoginScreen from '../screens/LoginScreen';
 import ProductListScreen from '../screens/ProductListScreen';
 import ProductDetailScreen from '../screens/ProductDetailScreen';
@@ -40,196 +33,189 @@ import RewardsScreen from '../screens/RewardsScreen';
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-/**
- * PointsBadge — shows loyalty points in the header.
- * Tapping it could navigate to rewards (wired in Phase 6).
- */
-const PointsBadge = () => {
+/** Brand title + points badge centered in header */
+const HeaderTitle = () => {
   const points = useSelector((state) => state.loyalty.points);
+  const { colors } = useTheme();
   return (
-    <View style={styles.pointsBadge}>
-      <Text style={styles.pointsIcon}>⭐</Text>
-      <Text style={styles.pointsText}>{points}</Text>
+    <View style={styles.brandHeader}>
+      <Text style={[styles.brandName, { color: colors.primary }]}>RewardLoop</Text>
+      <View style={[styles.pointsBadge, { backgroundColor: colors.gold + '25' }]}>
+        <Text style={styles.pointsIcon}>⭐</Text>
+        <Text style={[styles.pointsText, { color: colors.goldDark }]}>{points}</Text>
+      </View>
     </View>
   );
 };
 
-/**
- * LogoutButton — dispatches logout thunk from the header.
- */
-const LogoutButton = () => {
+/** Theme switch + Logout in header */
+const HeaderRight = () => {
   const dispatch = useDispatch();
+  const { isDark, toggleTheme, colors } = useTheme();
   return (
-    <TouchableOpacity
-      onPress={() => dispatch(logoutUser())}
-      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-    >
-      <Text style={styles.logoutText}>Logout</Text>
-    </TouchableOpacity>
+    <View style={styles.headerRight}>
+      <View style={styles.switchContainer}>
+        <Text style={styles.switchLabel}>{isDark ? '🌙' : '☀️'}</Text>
+        <Switch
+          value={isDark}
+          onValueChange={toggleTheme}
+          trackColor={{ false: '#D1D5DB', true: colors.primary + '60' }}
+          thumbColor={isDark ? colors.primary : '#F9FAFB'}
+          ios_backgroundColor="#D1D5DB"
+          style={styles.switch}
+        />
+      </View>
+      <TouchableOpacity
+        onPress={() => dispatch(logoutUser())}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
+        <Text style={[styles.logoutText, { color: colors.error }]}>Logout</Text>
+      </TouchableOpacity>
+    </View>
   );
 };
 
-/**
- * Products stack — list → detail navigation.
- */
-const ProductsStack = () => (
-  <Stack.Navigator
-    screenOptions={{
-      headerStyle: { backgroundColor: Colors.surface },
-      headerTintColor: Colors.textPrimary,
-      headerTitleStyle: { fontWeight: '600', fontSize: FontSize.lg },
-      headerShadowVisible: false,
-    }}
-  >
-    <Stack.Screen
-      name="ProductList"
-      component={ProductListScreen}
-      options={{
-        title: '🛍️ Products',
-        headerLeft: () => <PointsBadge />,
-        headerRight: () => <LogoutButton />,
-      }}
-    />
-    <Stack.Screen
-      name="ProductDetail"
-      component={ProductDetailScreen}
-      options={{ title: 'Details' }}
-    />
-  </Stack.Navigator>
-);
-
-/**
- * Main bottom tab navigator.
- */
-const MainTabs = () => (
-  <Tab.Navigator
-    screenOptions={{
-      headerShown: false,
-      tabBarActiveTintColor: Colors.primary,
-      tabBarInactiveTintColor: Colors.textLight,
-      tabBarStyle: {
-        backgroundColor: Colors.surface,
-        borderTopColor: Colors.border,
-        paddingBottom: 4,
-        height: 60,
-      },
-      tabBarLabelStyle: {
-        fontSize: FontSize.xs,
-        fontWeight: '600',
-      },
-    }}
-  >
-    <Tab.Screen
-      name="ProductsTab"
-      component={ProductsStack}
-      options={{
-        tabBarLabel: 'Products',
-        tabBarIcon: ({ color }) => (
-          <Text style={[styles.tabIcon, { color }]}>🛍️</Text>
-        ),
-      }}
-    />
-    <Tab.Screen
-      name="FavoritesTab"
-      component={FavoritesScreen}
-      options={{
-        title: '❤️ Favorites',
-        headerShown: true,
-        headerStyle: { backgroundColor: Colors.surface },
-        headerTintColor: Colors.textPrimary,
+/** Products stack */
+const ProductsStack = () => {
+  const { colors } = useTheme();
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: { backgroundColor: colors.surface },
+        headerTintColor: colors.textPrimary,
         headerTitleStyle: { fontWeight: '600', fontSize: FontSize.lg },
         headerShadowVisible: false,
-        tabBarLabel: 'Favorites',
-        tabBarIcon: ({ color }) => (
-          <Text style={[styles.tabIcon, { color }]}>❤️</Text>
-        ),
       }}
-    />
-    <Tab.Screen
-      name="RewardsTab"
-      component={RewardsScreen}
-      options={{
-        title: '🏆 My Rewards',
-        headerShown: true,
-        headerStyle: { backgroundColor: Colors.surface },
-        headerTintColor: Colors.textPrimary,
-        headerTitleStyle: { fontWeight: '600', fontSize: FontSize.lg },
-        headerShadowVisible: false,
-        tabBarLabel: 'Rewards',
-        tabBarIcon: ({ color }) => (
-          <Text style={[styles.tabIcon, { color }]}>🏆</Text>
-        ),
-      }}
-    />
-  </Tab.Navigator>
-);
+    >
+      <Stack.Screen
+        name="ProductList"
+        component={ProductListScreen}
+        options={{
+          headerTitle: () => <HeaderTitle />,
+          headerRight: () => <HeaderRight />,
+        }}
+      />
+      <Stack.Screen
+        name="ProductDetail"
+        component={ProductDetailScreen}
+        options={{ title: 'Details' }}
+      />
+    </Stack.Navigator>
+  );
+};
 
-/**
- * Root navigator — handles auth hydration and conditional stacks.
- */
+/** Main bottom tabs */
+const MainTabs = () => {
+  const { colors } = useTheme();
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textLight,
+        tabBarStyle: {
+          backgroundColor: colors.tabBarBackground,
+          borderTopColor: colors.tabBarBorder,
+          paddingBottom: 4,
+          height: 60,
+        },
+        tabBarLabelStyle: { fontSize: FontSize.xs, fontWeight: '600' },
+      }}
+    >
+      <Tab.Screen
+        name="ProductsTab"
+        component={ProductsStack}
+        options={{
+          tabBarLabel: 'Products',
+          tabBarIcon: ({ color }) => <Text style={[styles.tabIcon, { color }]}>🛍️</Text>,
+        }}
+      />
+      <Tab.Screen
+        name="FavoritesTab"
+        component={FavoritesScreen}
+        options={{
+          title: '❤️ Favorites',
+          headerShown: true,
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.textPrimary,
+          headerTitleStyle: { fontWeight: '600', fontSize: FontSize.lg },
+          headerShadowVisible: false,
+          tabBarLabel: 'Favorites',
+          tabBarIcon: ({ color }) => <Text style={[styles.tabIcon, { color }]}>❤️</Text>,
+        }}
+      />
+      <Tab.Screen
+        name="RewardsTab"
+        component={RewardsScreen}
+        options={{
+          title: '🏆 My Rewards',
+          headerShown: true,
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.textPrimary,
+          headerTitleStyle: { fontWeight: '600', fontSize: FontSize.lg },
+          headerShadowVisible: false,
+          tabBarLabel: 'Rewards',
+          tabBarIcon: ({ color }) => <Text style={[styles.tabIcon, { color }]}>🏆</Text>,
+        }}
+      />
+    </Tab.Navigator>
+  );
+};
+
+/** Root navigator with auth hydration */
 const AppNavigator = () => {
   const dispatch = useDispatch();
   const isLoggedIn = useSelector((state) => state.auth.isLoggedIn);
+  const { colors, isDark } = useTheme();
   const [isHydrating, setIsHydrating] = useState(true);
 
-  /**
-   * On app boot, check AsyncStorage for a saved session.
-   * If found, restore auth + loyalty + favorites state (hydration).
-   * This prevents the user from seeing a login flash on app restart.
-   */
+  // Custom nav themes that match our palette
+  const navTheme = {
+    ...(isDark ? NavDarkTheme : DefaultTheme),
+    colors: {
+      ...(isDark ? NavDarkTheme : DefaultTheme).colors,
+      background: colors.background,
+      card: colors.surface,
+      text: colors.textPrimary,
+      border: colors.border,
+      primary: colors.primary,
+    },
+  };
+
   useEffect(() => {
     const hydrateAuth = async () => {
       try {
         const token = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
         const userJson = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
-
         if (token) {
           const user = userJson ? JSON.parse(userJson) : null;
           dispatch(setCredentials({ token, user }));
-
-          // Also restore loyalty & favorites if available
-          const loyaltyJson = await AsyncStorage.getItem(
-            STORAGE_KEYS.LOYALTY_DATA
-          );
-          if (loyaltyJson) {
-            dispatch(setLoyaltyData(JSON.parse(loyaltyJson)));
-          }
-
-          const favoritesJson = await AsyncStorage.getItem(
-            STORAGE_KEYS.FAVORITES
-          );
-          if (favoritesJson) {
-            dispatch(setFavorites(JSON.parse(favoritesJson)));
-          }
+          const loyaltyJson = await AsyncStorage.getItem(STORAGE_KEYS.LOYALTY_DATA);
+          if (loyaltyJson) dispatch(setLoyaltyData(JSON.parse(loyaltyJson)));
+          const favoritesJson = await AsyncStorage.getItem(STORAGE_KEYS.FAVORITES);
+          if (favoritesJson) dispatch(setFavorites(JSON.parse(favoritesJson)));
         }
       } catch (err) {
-        // Silent fail — user will just see login screen
         console.warn('Auth hydration failed:', err);
       } finally {
         setIsHydrating(false);
       }
     };
-
     hydrateAuth();
   }, [dispatch]);
 
-  // Show loading spinner while restoring session
   if (isHydrating) {
     return (
-      <View style={styles.splash}>
+      <View style={[styles.splash, { backgroundColor: colors.background }]}>
         <Text style={styles.splashLogo}>🎁</Text>
-        <Text style={styles.splashBrand}>RewardLoop</Text>
-        <ActivityIndicator
-          color={Colors.primary}
-          size="large"
-          style={{ marginTop: Spacing.lg }}
-        />
+        <Text style={[styles.splashBrand, { color: colors.primary }]}>RewardLoop</Text>
+        <ActivityIndicator color={colors.primary} size="large" style={{ marginTop: Spacing.lg }} />
       </View>
     );
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navTheme}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {isLoggedIn ? (
           <Stack.Screen name="Main" component={MainTabs} />
@@ -242,51 +228,35 @@ const AppNavigator = () => {
 };
 
 const styles = StyleSheet.create({
-  tabIcon: {
-    fontSize: 22,
+  tabIcon: { fontSize: 22 },
+  // ── Brand header ──
+  brandHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
+  brandEmoji: { fontSize: 20, marginRight: 6 },
+  brandName: { fontSize: FontSize.lg, fontWeight: '800', letterSpacing: -0.3 },
   // ── Points badge ──
   pointsBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF8E1',
     borderRadius: BorderRadius.full,
     paddingHorizontal: Spacing.sm,
     paddingVertical: 4,
     marginLeft: Spacing.sm,
   },
-  pointsIcon: {
-    fontSize: 14,
-    marginRight: 4,
-  },
-  pointsText: {
-    fontSize: FontSize.sm,
-    fontWeight: '700',
-    color: Colors.goldDark,
-  },
-  // ── Logout ──
-  logoutText: {
-    fontSize: FontSize.md,
-    fontWeight: '600',
-    color: Colors.error,
-    marginRight: Spacing.sm,
-  },
-  // ── Splash / hydration ──
-  splash: {
-    flex: 1,
-    backgroundColor: Colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  splashLogo: {
-    fontSize: 64,
-    marginBottom: Spacing.sm,
-  },
-  splashBrand: {
-    fontSize: FontSize.hero,
-    fontWeight: '800',
-    color: Colors.primary,
-  },
+  pointsIcon: { fontSize: 14, marginRight: 4 },
+  pointsText: { fontSize: FontSize.sm, fontWeight: '700' },
+  // ── Header right ──
+  headerRight: { flexDirection: 'row', alignItems: 'center', marginRight: Spacing.sm },
+  switchContainer: { flexDirection: 'row', alignItems: 'center', marginRight: Spacing.md },
+  switchLabel: { fontSize: 14, marginRight: 4 },
+  switch: { transform: [{ scale: 0.8 }] },
+  logoutText: { fontSize: FontSize.md, fontWeight: '600' },
+  // ── Splash ──
+  splash: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  splashLogo: { fontSize: 64, marginBottom: Spacing.sm },
+  splashBrand: { fontSize: 34, fontWeight: '800' },
 });
 
 export default AppNavigator;
