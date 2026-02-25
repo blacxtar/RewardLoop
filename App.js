@@ -1,20 +1,28 @@
+/**
+ * App.js — root entry point for RewardLoop.
+ * 
+ * Wraps the entire application in:
+ * 1. Redux Provider — makes the store available to all components via hooks
+ * 2. SafeAreaProvider — handles device-safe insets (notches, status bars)
+ * 3. AppNavigator — the conditional auth/main navigation tree
+ * 
+ * StatusBar is set to dark-content on a light background to match our theme.
+ */
+
+import React from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Provider } from 'react-redux';
+import store from './src/redux/store';
+import AppNavigator from './src/navigation/AppNavigator';
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <Provider store={store}>
+      <SafeAreaProvider>
+        <StatusBar style="dark" />
+        <AppNavigator />
+      </SafeAreaProvider>
+    </Provider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
