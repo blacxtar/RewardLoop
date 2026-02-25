@@ -24,6 +24,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { loginUser, clearError } from '../redux/slices/authSlice';
 import { earnPoints } from '../redux/slices/loyaltySlice';
 import { LOYALTY_POINTS, TRANSACTION_TYPES } from '../utils/constants';
+import { saveLoyaltyData } from '../utils/storage';
 import CustomInput from '../components/CustomInput';
 import CustomButton from '../components/CustomButton';
 import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
@@ -83,6 +84,19 @@ const LoginScreen = () => {
           description: 'Welcome bonus for logging in',
         })
       );
+      // Persist loyalty data after earning welcome bonus
+      saveLoyaltyData({
+        points: LOYALTY_POINTS.LOGIN_BONUS,
+        transactions: [
+          {
+            id: Date.now().toString(),
+            type: TRANSACTION_TYPES.LOGIN_BONUS,
+            points: LOYALTY_POINTS.LOGIN_BONUS,
+            description: 'Welcome bonus for logging in',
+            date: new Date().toISOString(),
+          },
+        ],
+      });
     }
   }, [dispatch, username, password, validate]);
 
